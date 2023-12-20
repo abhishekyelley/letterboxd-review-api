@@ -6,7 +6,7 @@ app.use(cors())
 
 const missingParamsError = {
     error: true,
-    message: "Missing required params (uid and/or fid)",
+    message: "Missing required params (blink)",
     status: 422
 }
 
@@ -16,7 +16,7 @@ app.get('/', (req, res) => {
         <p style="color:white">
             visit
             <br>
-            "/review?uid=USER_ID&fid=FILM_ID&vid=REVIEW_VERSION" for short review
+            "/review?blink=${LBX_URL}" for short review
             <br>
             and
             <br>
@@ -27,10 +27,12 @@ app.get('/', (req, res) => {
     `)
 })
 app.get('/review', (req, res) => {
-    const uid = req.query.uid
-    const fid = req.query.fid
-    const vid = req.query.vid
-    if(!uid || !fid){
+    const blink = req.query.blink
+    if(blink){
+        const detailsObj = validateURl(blink)
+        console.log(detailsObj)
+    }
+    else{
         return res.status(missingParamsError.status).json(missingParamsError)
     }
     getSmallData(uid, fid, vid)
@@ -47,7 +49,6 @@ app.get('/review-detailed', (req, res) => {
     const vid = req.query.vid
     if(!uid || !fid){
         return res.status(missingParamsError.status).json(missingParamsError)
-        
     }
     getDetailedData(uid, fid, vid)
     .then((details) => {
