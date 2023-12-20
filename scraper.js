@@ -1,43 +1,33 @@
 const axios = require('axios')
-const cheerio = require('cheerio')
-const { matchURL, getOpenCloseBraces, getScriptTagText } = require('./utils')
+const { matchURL, getOpenCloseBraces, getScrapedData, getJson } = require('./utils')
 
 var film_year
+
 function getData(url){
     return new Promise((resolve, reject) => {
         axios.get(url)
-        .then((response) => {
-            const $ = cheerio.load(response.data)
-            const scriptTagText = $('script[type="application/ld+json"]').text()
-            if(scriptTagText){
-                getOpenCloseBraces(scriptTagText)
-                .then(({ openBrace, closeBrace }) => {
-                    return JSON.parse(scriptTagText.slice(openBrace, closeBrace+1))
-                })
-                .then((data) => {
-                    return matchURL(data)
-                })
-                .then((data) => {
-                    film_year = $('.film-title-wrapper > small').text()
-                    return resolve(data)
-                })
-                .catch( (error) => {
-                    return reject(error)
-                })
-            }
-            else{
-                reject({
-                    message: "Bad URL! Couldn't find script tag",
-                    response: {status: 400}
-                })
-            }
+        .then((response) =>
+            getScrapedData(response)
+        )
+        .then(({ scriptTagText, film_year_scrape })=> {
+            film_year = film_year_scrape
+            return getOpenCloseBraces(scriptTagText)
         })
+        .then(({ scriptTagText, openBrace, closeBrace }) => 
+            getJson(scriptTagText, openBrace, closeBrace)
+        )
+        .then((data) => 
+            matchURL(data)
+        )
+        .then((data) => 
+            resolve(data)
+        )
         .catch((error) => {
             console.error('Error fetching data:', error.message)
             reject({
                 error: true,
                 message: error.message || "Error occured",
-                status: error.response ? error.response.status || 500 : 500,
+                status: error.response ? error.response.status || 404 : 404,
                 url: error.url || url
             })
         })
@@ -56,9 +46,9 @@ function getDetailedData(uid, fid, vid){
     })
 }
 
-function getSmallData(uid, fid, vid){
+function getSmallData(url){
     return new Promise((resolve, reject) => {
-        getData(uid, fid, vid)
+        getData(url)
         .then((response) => {
             var ratingValue
             if(!response.reviewRating){
@@ -74,7 +64,9 @@ function getSmallData(uid, fid, vid){
                 reviewContent: response.reviewBody,
                 filmName: response.itemReviewed.name,
                 filmYear: film_year,
-                reviewRating: ratingValue
+                reviewRating: ratingValue,
+                filmURL: response.itemReviewed.sameAs,
+                url: response.url
             })
         })
         .catch((error) => {
@@ -83,43 +75,8 @@ function getSmallData(uid, fid, vid){
     })
 }
 
-
-// =============TESTING============
-const uid = "kenough_"
-const fid = "petta"
-const vid = "1"
-// getSmallData(uid, fid, vid)
-// .then((res)=>{
-//     console.log(res)
-// })
-
-// "https://letterboxd.com/kenough_/film/petta/1/"
-// "https://letterboxd.com/film/petta/"
-
-getData("https://letterboxd.com/kenough_/film/petta/1/")
-.then(res=>console.log(res))
-.catch(err=>console.error(err))
-// =============TESTING============
-
-
 module.exports = {getDetailedData, getSmallData}
 
 
 // structured data markup
 
-/*
-const reviewStars = $('.rating.rating-large.rated-large-9').text()
-const reviewerName = $('.title-4 > a > span').eq(0).text()
-const filmName = $('.film-title-wrapper > a').text()
-const filmYear = $('.film-title-wrapper > small').text()
-const reviewContent = $('.review.body-text.-prose.-hero.-loose > div > div').text()
-resolve({
-    userId: uid,
-    filmId: fid,
-    reviewStars,
-    reviewerName,
-    filmName,
-    filmYear,
-    reviewContent
-})
-*/

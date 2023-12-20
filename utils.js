@@ -1,4 +1,7 @@
+const cheerio = require('cheerio')
+
 const urlPattern = /^https:\/\/letterboxd\.com\/([a-zA-Z0-9_-]+)\/film\/([a-zA-Z0-9_-]+)\/?(\d*)\/?$/
+
 function matchURL(data) {
     return new Promise((resolve, reject) => {
         const url = data.url
@@ -32,7 +35,7 @@ function getOpenCloseBraces(scriptTagText){
     }
     return new Promise( (resolve, reject) => {
         if(openBrace != -1 && closeBrace != -1)
-            resolve({openBrace, closeBrace})
+            resolve({scriptTagText, openBrace, closeBrace})
         else
             reject({
                 message: "Bad URL! Couldn't JSON in script tag",
@@ -41,11 +44,14 @@ function getOpenCloseBraces(scriptTagText){
     })
 }
 
-function getScriptTagText($){
+// scrape page and check the script tag
+function getScrapedData(response){
     return new Promise((resolve, reject) => {
+        const $ = cheerio.load(response.data)
         const scriptTagText = $('script[type="application/ld+json"]').text()
+        const film_year_scrape = $('.film-title-wrapper > small').text()
         if(scriptTagText){
-            resolve(scriptTagText)
+            resolve({scriptTagText, film_year_scrape})
         }
         else{
             reject({
@@ -56,4 +62,21 @@ function getScriptTagText($){
     })
 }
 
-module.exports = { matchURL, getOpenCloseBraces, getScriptTagText }
+function getJson(scriptTagText, openBrace, closeBrace){
+    return new Promise((resolve, reject) => {
+        const data = JSON.parse(scriptTagText.slice(openBrace, closeBrace+1))
+        if(data){
+            // data.film_year = $('.film-title-wrapper > small').text()
+            resolve(data)
+        }
+        else{
+            reject({
+                message: "Bad URL! Couldn't make JSON",
+                response: {status: 400}
+            })
+        }
+        
+    })
+}
+
+module.exports = { matchURL, getOpenCloseBraces, getScrapedData, getJson }

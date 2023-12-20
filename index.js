@@ -16,7 +16,7 @@ app.get('/', (req, res) => {
         <p style="color:white">
             visit
             <br>
-            "/review?blink=${LBX_URL}" for short review
+            "/review?blink=LBX_URL" for short review
             <br>
             and
             <br>
@@ -28,14 +28,10 @@ app.get('/', (req, res) => {
 })
 app.get('/review', (req, res) => {
     const blink = req.query.blink
-    if(blink){
-        const detailsObj = validateURl(blink)
-        console.log(detailsObj)
-    }
-    else{
+    if(!blink){
         return res.status(missingParamsError.status).json(missingParamsError)
     }
-    getSmallData(uid, fid, vid)
+    getSmallData(blink)
     .then((details) => {
         res.json(details)
     })
@@ -44,13 +40,11 @@ app.get('/review', (req, res) => {
     })
 })
 app.get('/review-detailed', (req, res) => {
-    const uid = req.query.uid
-    const fid = req.query.fid
-    const vid = req.query.vid
-    if(!uid || !fid){
+    const blink = req.query.blink
+    if(!blink){
         return res.status(missingParamsError.status).json(missingParamsError)
     }
-    getDetailedData(uid, fid, vid)
+    getDetailedData(blink)
     .then((details) => {
         res.json(details)
     })
