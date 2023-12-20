@@ -4,6 +4,10 @@ const app = express();
 const { getDetailedData, getSmallData } = require('./scraper')
 app.use(cors())
 
+
+app.get('/', (req, res) => {
+    res.status(200).send('<h3>visit "/review?uid=USER_ID&fid=FILM_ID&vid=REVIEW_VERSION" for short review and "/review-detailed" for the long one</h3>')
+})
 app.get('/review', (req, res) => {
     const uid = req.query.uid
     const fid = req.query.fid
