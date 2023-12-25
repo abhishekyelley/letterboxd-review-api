@@ -1,7 +1,7 @@
 const express = require('express')
 const cors = require('cors')
 const app = express();
-const { getDetailedData, getSmallData } = require('./scraper')
+const { getReviewData } = require('./scraper')
 app.use(cors())
 
 const missingParamsError = {
@@ -11,40 +11,17 @@ const missingParamsError = {
 }
 
 app.get('/', (req, res) => {
-    res.status(200).send(`
-    <body style="background-color: black">
-        <p style="color:white">
-            visit
-            <br>
-            "/review?blink=LBX_URL" for short review
-            <br>
-            and
-            <br>
-            "/review-detailed" for the long one
-        </p>
-    </body>
-    
-    `)
+    res.status(502).json({
+        error: true,
+        message: "Visit /review?blink=${letterboxd_url}"
+    })
 })
 app.get('/review', (req, res) => {
     const blink = req.query.blink
     if(!blink){
         return res.status(missingParamsError.status).json(missingParamsError)
     }
-    getSmallData(blink)
-    .then((details) => {
-        res.json(details)
-    })
-    .catch((error) => {
-        res.status(error.status).json(error)
-    })
-})
-app.get('/review-detailed', (req, res) => {
-    const blink = req.query.blink
-    if(!blink){
-        return res.status(missingParamsError.status).json(missingParamsError)
-    }
-    getDetailedData(blink)
+    getReviewData(blink)
     .then((details) => {
         res.json(details)
     })
