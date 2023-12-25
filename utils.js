@@ -100,8 +100,9 @@ function addImages(response){
                     iresolve({content_id, content_type})
                 }
                 else{
-                    const lbx_image = $('#backdrop').attr('data-backdrop2x')
-                    console.log(lbx_image)
+                    var lbx_image = $('#backdrop').attr('data-backdrop2x')
+                    if(!lbx_image)
+                        lbx_image = $('#backdrop').attr('data-backdrop')
                     const images = []
                     if(lbx_image)
                         images.push(lbx_image)
