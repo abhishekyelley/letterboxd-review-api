@@ -1,5 +1,6 @@
+require('dotenv').config()
+const axios = require('axios')
 const cheerio = require('cheerio')
-
 const urlPattern = /^https:\/\/letterboxd\.com\/([a-zA-Z0-9_-]+)\/film\/([a-zA-Z0-9_-]+)\/?(\d*)\/?$/
 
 function matchURL(data) {
@@ -79,4 +80,74 @@ function getJson(scriptTagText, openBrace, closeBrace){
     })
 }
 
-module.exports = { matchURL, getOpenCloseBraces, getScrapedData, getJson }
+function addImages(response){
+    const API_KEY = process.env.TMDB_API_KEY
+    return new Promise((resolve, reject) => {
+        axios({
+            method: 'GET',
+            headers: {
+                accept: 'application/json'
+            },
+            url: response.filmURL
+        })
+        .then((res) => {
+            const $ = cheerio.load(res.data)
+            const retBody = $('body')
+            const content_type = retBody.attr('data-tmdb-type')
+            const content_id = retBody.attr('data-tmdb-id')
+            return new Promise((iresolve, ireject) => {
+                if(content_type && content_id){
+                    iresolve({content_id, content_type})
+                }
+                else{
+                    const lbx_image = $('#backdrop').attr('data-backdrop2x')
+                    console.log(lbx_image)
+                    const images = []
+                    if(lbx_image)
+                        images.push(lbx_image)
+                    response.images = images
+                    resolve(response)
+                    // ireject({
+                    //     message: "Couldn't find content id and/or type for TMDB",
+                    //     response: {status: 400},
+                    // })
+                }
+            })
+        })
+        .then(({content_id, content_type}) => {
+            return axios({
+                method: 'GET',
+                headers: {
+                    accept: 'application/json'
+                },
+                url: `https://api.themoviedb.org/3/${content_type}/${content_id}/images?api_key=${API_KEY}`
+            })
+        })
+        .then((res) => {
+            res = res.data
+            const IMAGES_BASE_URL = 'https://image.tmdb.org/t/p/original'
+            const images = []
+            if(res.backdrops.length > 0){
+                res.backdrops.forEach((item) => {
+                    images.push(IMAGES_BASE_URL+item.file_path)
+                })
+            }
+            else if(res.posters.length > 0){
+                res.posters.forEach((item) => {
+                    images.push(IMAGES_BASE_URL+item.file_path)
+                })
+            }
+            response.images = images
+            resolve(response)
+        })
+        .catch((error) => {
+            reject({
+                error: true,
+                message: error.message || "Error occured",
+                status: error.response ? error.response.status || 404 : 404
+            })
+        })
+    })
+}
+
+module.exports = { matchURL, getOpenCloseBraces, getScrapedData, getJson, addImages }

@@ -1,5 +1,5 @@
 const axios = require('axios')
-const { matchURL, getOpenCloseBraces, getScrapedData, getJson } = require('./utils')
+const { matchURL, getOpenCloseBraces, getScrapedData, getJson, addImages } = require('./utils')
 
 var film_year
 
@@ -34,19 +34,7 @@ function getData(url){
     })
 }
 
-function getDetailedData(uid, fid, vid){
-    return new Promise((resolve, reject) => {
-        getData(uid, fid, vid)
-        .then((response) => {
-            resolve(response)
-        })
-        .catch((error) => {
-            reject(error)
-        })
-    })
-}
-
-function getSmallData(url){
+function getReviewData(url){
     return new Promise((resolve, reject) => {
         getData(url)
         .then((response) => {
@@ -57,25 +45,33 @@ function getSmallData(url){
             else{
                 ratingValue = response.reviewRating.ratingValue
             }
-            resolve({
-                // reviewerId: response.author[0].sameAs.split('/')[3],
-                reviewerName: response.author[0].name,
-                reviewDesc: response.description,
-                reviewContent: response.reviewBody,
-                filmName: response.itemReviewed.name,
-                filmYear: film_year,
-                reviewRating: ratingValue,
-                filmURL: response.itemReviewed.sameAs,
-                url: response.url
-            })
+            return new Promise((resolve, reject) =>
+                resolve({
+                    // reviewerId: response.author[0].sameAs.split('/')[3],
+                    reviewerName: response.author[0].name,
+                    reviewDesc: response.description,
+                    reviewContent: response.reviewBody,
+                    filmName: response.itemReviewed.name,
+                    filmYear: film_year,
+                    reviewRating: ratingValue,
+                    filmURL: response.itemReviewed.sameAs,
+                    url: response.url
+                })
+            )
         })
+        .then((response) => 
+            addImages(response)
+        )
+        .then(response => 
+            resolve(response)
+        )
         .catch((error) => {
             reject(error)
         })
     })
 }
 
-module.exports = {getDetailedData, getSmallData}
+module.exports = {getReviewData}
 
 
 // structured data markup
