@@ -52,7 +52,7 @@ function getSmallData(url){
         .then((response) => {
             var ratingValue
             if(!response.reviewRating){
-                ratingValue = null
+                ratingValue = 0
             }
             else{
                 ratingValue = response.reviewRating.ratingValue
