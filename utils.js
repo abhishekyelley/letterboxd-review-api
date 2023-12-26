@@ -3,6 +3,13 @@ const axios = require('axios')
 const cheerio = require('cheerio')
 const urlPattern = /^https:\/\/letterboxd\.com\/([a-zA-Z0-9_-]+)\/film\/([a-zA-Z0-9_-]+)\/?(\d*)\/?$/
 
+function handleError(msg, st){
+    return {
+        message: msg,
+        response: {status: st}
+    }
+}
+
 function matchURL(data) {
     return new Promise((resolve, reject) => {
         const url = data.url
@@ -11,10 +18,7 @@ function matchURL(data) {
             resolve(data)
         }
         else{
-            reject({
-                message: "Bad URL! Couln't match the url in script tag",
-                response: {status: 400}
-            })
+            reject(handleError("Bad URL! Couln't match the url in script tag", 400))
         }
     })
 }
@@ -38,10 +42,7 @@ function getOpenCloseBraces(scriptTagText){
         if(openBrace != -1 && closeBrace != -1)
             resolve({scriptTagText, openBrace, closeBrace})
         else
-            reject({
-                message: "Bad URL! Couldn't JSON in script tag",
-                response: {status: 400}
-            })
+            reject(handleError("Bad URL! Couldn't JSON in script tag", 400))
     })
 }
 
@@ -55,10 +56,7 @@ function getScrapedData(response){
             resolve({scriptTagText, film_year_scrape})
         }
         else{
-            reject({
-                message: "Bad URL! Couldn't find the script tag",
-                response: {status: 400}
-            })
+            reject(handleError("Bad URL! Couldn't find the script tag", 400))
         }
     })
 }
@@ -71,10 +69,7 @@ function getJson(scriptTagText, openBrace, closeBrace){
             resolve(data)
         }
         else{
-            reject({
-                message: "Bad URL! Couldn't make JSON",
-                response: {status: 400}
-            })
+            reject(handleError("Bad URL! Couldn't make JSON", 400))
         }
         
     })
@@ -151,4 +146,24 @@ function addImages(response){
     })
 }
 
-module.exports = { matchURL, getOpenCloseBraces, getScrapedData, getJson, addImages }
+function getAxios(obj){
+    return axios(obj)
+}
+
+function isImage(res){
+    return new Promise((resolve, reject) => {
+        if(res.headers['content-type'] === 'image/jpeg'){
+            resolve(res)
+        }
+        else{
+            reject({
+                error: true,
+                message: "Not a jpeg image",
+                status: 415,
+                url: res.url
+            })
+        }
+    })
+}
+
+module.exports = { matchURL, getOpenCloseBraces, getScrapedData, getJson, addImages, getAxios, isImage }
