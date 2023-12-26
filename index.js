@@ -13,7 +13,7 @@ const missingParamsError = {
 app.get('/', (req, res) => {
     res.status(502).json({
         error: true,
-        message: "Visit /review?blink=${letterboxd_url} or /images?blink=${jpeg_image_url}"
+        message: "Visit /review?blink=${letterboxd_url} or /image?blink=${jpeg_image_url}"
     })
 })
 app.get('/review', (req, res) => {
