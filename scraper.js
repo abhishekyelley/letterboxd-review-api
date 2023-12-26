@@ -1,11 +1,10 @@
-const axios = require('axios')
-const { matchURL, getOpenCloseBraces, getScrapedData, getJson, addImages } = require('./utils')
+const { matchURL, getOpenCloseBraces, getScrapedData, getJson, addImages, getAxios, isImage } = require('./utils')
 
 var film_year
 
-function getData(url){
+function getData(req_url){
     return new Promise((resolve, reject) => {
-        axios.get(url)
+        getAxios({url: req_url})
         .then((response) =>
             getScrapedData(response)
         )
@@ -28,15 +27,15 @@ function getData(url){
                 error: true,
                 message: error.message || "Error occured",
                 status: error.response ? error.response.status || 404 : 404,
-                url: error.url || url
+                url: error.url || req_url
             })
         })
     })
 }
 
-function getReviewData(url){
+function getReviewData(req_url){
     return new Promise((resolve, reject) => {
-        getData(url)
+        getData(req_url)
         .then((response) => {
             var ratingValue
             if(!response.reviewRating){
@@ -45,8 +44,8 @@ function getReviewData(url){
             else{
                 ratingValue = response.reviewRating.ratingValue
             }
-            return new Promise((resolve, reject) =>
-                resolve({
+            return new Promise((iresolve, ireject) =>
+                iresolve({
                     // reviewerId: response.author[0].sameAs.split('/')[3],
                     reviewerName: response.author[0].name,
                     reviewDesc: response.description,
@@ -71,7 +70,29 @@ function getReviewData(url){
     })
 }
 
-module.exports = {getReviewData}
+function getProxyImage(req_url){
+    return new Promise((resolve, reject) => {
+        getAxios({
+            method: "GET",
+            url: req_url,
+            responseType: "arraybuffer"
+        })
+        .then((res) => isImage(res) )
+        .then((res) => {
+            resolve(res)
+        })
+        .catch((error) => reject(
+            {
+                error: true,
+                message: error.message || "Couldn't reach image",
+                status: error.response ? error.response.status || 404 : 404,
+                url: error.url || req_url
+            }
+        ))
+    })
+}
+
+module.exports = { getReviewData, getProxyImage }
 
 
 // structured data markup

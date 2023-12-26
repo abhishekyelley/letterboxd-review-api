@@ -1,7 +1,7 @@
 const express = require('express')
 const cors = require('cors')
 const app = express();
-const { getReviewData } = require('./scraper')
+const { getReviewData, getProxyImage } = require('./scraper')
 app.use(cors())
 
 const missingParamsError = {
@@ -13,7 +13,7 @@ const missingParamsError = {
 app.get('/', (req, res) => {
     res.status(502).json({
         error: true,
-        message: "Visit /review?blink=${letterboxd_url}"
+        message: "Visit /review?blink=${letterboxd_url} or /images?blink=${jpeg_image_url}"
     })
 })
 app.get('/review', (req, res) => {
@@ -24,6 +24,20 @@ app.get('/review', (req, res) => {
     getReviewData(blink)
     .then((details) => {
         res.json(details)
+    })
+    .catch((error) => {
+        res.status(error.status).json(error)
+    })
+})
+app.get('/image', (req, res) => {
+    const blink = req.query.blink;
+    if (!blink) {
+        return res.status(missingParamsError.status).json(missingParamsError)
+    }
+    getProxyImage(blink)
+    .then((response) => {
+        res.setHeader('Content-Type', 'image/jpeg')
+        res.send(response.data)
     })
     .catch((error) => {
         res.status(error.status).json(error)
