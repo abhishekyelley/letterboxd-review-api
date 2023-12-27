@@ -1,15 +1,36 @@
 const express = require('express')
 const cors = require('cors')
-const app = express();
+const rateLimit = require('express-rate-limit')
 const { getReviewData, getProxyImage } = require('./scraper')
-app.use(cors())
-
 const missingParamsError = {
     error: true,
     message: "Missing required params (blink)",
     status: 422
 }
 
+const useRateLimit = true
+const maxRequests = 15
+const minSeconds = 60
+
+const app = express()
+const limiter = rateLimit({
+    windowMs: minSeconds * 1000,
+    max: maxRequests,
+    headers: true,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res ) => {
+        return res.status(429).json({
+            error: true,
+            message: 'You sent too many requests. Please wait a while then try again',
+            status: 429
+        })
+    }
+})
+
+if(useRateLimit)
+    app.use(limiter)
+app.use(cors())
 app.get('/', (req, res) => {
     res.status(502).json({
         error: true,
