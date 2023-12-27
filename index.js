@@ -17,9 +17,12 @@ app.get('/', (req, res) => {
     })
 })
 app.get('/review', (req, res) => {
-    const blink = req.query.blink
+    var blink = req.query.blink
     if(!blink){
         return res.status(missingParamsError.status).json(missingParamsError)
+    }
+    if(!(blink.substr(0, 8) === 'https://' || blink.substr(0, 7) === 'http://')){
+        blink = 'http://' + blink
     }
     getReviewData(blink)
     .then((details) => {
