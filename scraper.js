@@ -75,12 +75,12 @@ function getProxyImage(req_url){
         getAxios({
             method: "GET",
             url: req_url,
-            responseType: "arraybuffer"
+            // responseType was arraybuffer
+            // to use stream, result must be piped
+            responseType: "stream"
         })
-        .then((res) => isImage(res) )
-        .then((res) => {
-            resolve(res)
-        })
+        .then((res) => isImage(res))
+        .then((res) => resolve(res))
         .catch((error) => reject(
             {
                 error: true,
