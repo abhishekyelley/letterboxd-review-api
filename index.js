@@ -1,6 +1,3 @@
-// const express = require('express')
-// const cors = require('cors')
-// const rateLimit = require('express-rate-limit')
 import http from 'http'
 import url from 'url'
 import { getReviewData, getProxyImage } from './scraper.js'

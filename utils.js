@@ -1,5 +1,4 @@
 import dotenv from 'dotenv'
-import axios from 'axios'
 import fetch from 'node-fetch'
 import { load } from 'cheerio'
 const urlPattern = /^https:\/\/letterboxd\.com\/([a-zA-Z0-9_-]+)\/film\/([a-zA-Z0-9_-]+)\/?(\d*)\/?$/
@@ -181,7 +180,7 @@ function isImage(res){
             reject({
                 error: true,
                 message: "Not an image",
-                status: 404,
+                status: 415,
                 url: res.url
             })
         }
