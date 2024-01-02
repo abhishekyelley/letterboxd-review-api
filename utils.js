@@ -93,7 +93,7 @@ function addImages(response){
         getWebsite(response.filmURL, {
             method: 'GET',
             headers: {
-                accept: 'application/json'
+                'Accept': 'application/json'
             }
         })
         .then((res) => res.text())
