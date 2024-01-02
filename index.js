@@ -76,7 +76,7 @@ const server = http.createServer((req, res) => {
         getProxyImage(blink)
         .then((response) => {
             res.setHeader('Content-Type', 'image/jpeg')
-            response.body.pipe(res)
+            response.body.pipe(res, {end: true})
         })
         .catch((error) => {
             // CHANGE THIS
