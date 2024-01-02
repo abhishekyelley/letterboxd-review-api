@@ -1,8 +1,9 @@
-require('dotenv').config()
-const axios = require('axios')
-const cheerio = require('cheerio')
+import dotenv from 'dotenv'
+import fetch from 'node-fetch'
+import { load } from 'cheerio'
 const urlPattern = /^https:\/\/letterboxd\.com\/([a-zA-Z0-9_-]+)\/film\/([a-zA-Z0-9_-]+)\/?(\d*)\/?$/
 
+dotenv.config()
 function handleError(msg, st){
     return {
         message: msg,
@@ -49,15 +50,25 @@ function getOpenCloseBraces(scriptTagText){
 // scrape page and check the script tag
 function getScrapedData(response){
     return new Promise((resolve, reject) => {
-        const $ = cheerio.load(response.data)
-        const scriptTagText = $('script[type="application/ld+json"]').text()
-        const film_year_scrape = $('.film-title-wrapper > small').text()
-        if(scriptTagText){
-            resolve({scriptTagText, film_year_scrape})
-        }
-        else{
-            reject(handleError("Bad URL! Couldn't find the script tag", 400))
-        }
+        const status = response.status
+        response.text()
+        .then(response => {
+            const $ = load(response)
+            const scriptTagText = $('script[type="application/ld+json"]').text()
+            const film_year_scrape = $('.film-title-wrapper > small').text()
+            if(scriptTagText){
+                resolve({scriptTagText, film_year_scrape})
+            }
+            else{
+                if(status === 200)
+                    reject(handleError("Bad URL! Couldn't find the script tag", 400))
+                else
+                    reject(handleError("File not found", 404))
+            }
+        })
+        .catch((error) => {
+            reject(handleError(error.message || "Couldn't convert resource to html", 520))
+        })
     })
 }
 
@@ -78,15 +89,15 @@ function getJson(scriptTagText, openBrace, closeBrace){
 function addImages(response){
     const API_KEY = process.env.TMDB_API_KEY
     return new Promise((resolve, reject) => {
-        axios({
+        getWebsite(response.filmURL, {
             method: 'GET',
             headers: {
-                accept: 'application/json'
-            },
-            url: response.filmURL
+                'Accept': 'application/json'
+            }
         })
+        .then((res) => res.text())
         .then((res) => {
-            const $ = cheerio.load(res.data)
+            const $ = load(res)
             const retBody = $('body')
             const content_type = retBody.attr('data-tmdb-type')
             const content_id = retBody.attr('data-tmdb-id')
@@ -111,16 +122,16 @@ function addImages(response){
             })
         })
         .then(({content_id, content_type}) => {
-            return axios({
-                method: 'GET',
-                headers: {
-                    accept: 'application/json'
-                },
-                url: `https://api.themoviedb.org/3/${content_type}/${content_id}/images?api_key=${API_KEY}`
-            })
+            return getWebsite(`https://api.themoviedb.org/3/${content_type}/${content_id}/images?api_key=${API_KEY}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
         })
+        .then((res) => res.json())
         .then((res) => {
-            res = res.data
             const IMAGES_BASE_URL = 'https://image.tmdb.org/t/p/original'
             const images = []
             if(res.backdrops.length > 0){
@@ -146,16 +157,18 @@ function addImages(response){
     })
 }
 
-function getAxios(obj){
-    return axios(obj)
+function getWebsite(req_url, obj){
+    if(obj)
+        return fetch(req_url, obj)
+    return fetch(req_url)
 }
 
 function isImage(res){
     return new Promise((resolve, reject) => {
-        if(res.headers['content-type'] === 'image/jpeg'){
+        if(res.headers.get('content-type') === 'image/jpeg'){
             resolve(res)
         }
-        else{
+        else if(res.headers.get('content-type').startsWith('image/')){
             reject({
                 error: true,
                 message: "Not a jpeg image",
@@ -163,7 +176,23 @@ function isImage(res){
                 url: res.url
             })
         }
+        else if(res.status === 200){
+            reject({
+                error: true,
+                message: "Not an image",
+                status: 415,
+                url: res.url
+            })
+        }
+        else{
+            reject({
+                error: true,
+                message: "File not found",
+                status: 404,
+                url: res.url
+            })
+        }
     })
 }
 
-module.exports = { matchURL, getOpenCloseBraces, getScrapedData, getJson, addImages, getAxios, isImage }
+export { matchURL, getOpenCloseBraces, getScrapedData, getJson, addImages, getWebsite, isImage }

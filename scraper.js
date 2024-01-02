@@ -1,10 +1,9 @@
-const { matchURL, getOpenCloseBraces, getScrapedData, getJson, addImages, getAxios, isImage } = require('./utils')
-
+import { matchURL, getOpenCloseBraces, getScrapedData, getJson, addImages, getWebsite, isImage } from './utils.js'
 var film_year
 
 function getData(req_url){
     return new Promise((resolve, reject) => {
-        getAxios({url: req_url})
+        getWebsite(req_url)
         .then((response) =>
             getScrapedData(response)
         )
@@ -72,15 +71,16 @@ function getReviewData(req_url){
 
 function getProxyImage(req_url){
     return new Promise((resolve, reject) => {
-        getAxios({
+        getWebsite(req_url, {
             method: "GET",
-            url: req_url,
-            responseType: "arraybuffer"
+            // responseType was arraybuffer
+            // to use stream, result must be piped
+            headers: {
+                'Accept': 'stream'
+            }
         })
-        .then((res) => isImage(res) )
-        .then((res) => {
-            resolve(res)
-        })
+        .then((res) => isImage(res))
+        .then((res) => resolve(res))
         .catch((error) => reject(
             {
                 error: true,
@@ -92,7 +92,7 @@ function getProxyImage(req_url){
     })
 }
 
-module.exports = { getReviewData, getProxyImage }
+export { getReviewData, getProxyImage }
 
 
 // structured data markup
