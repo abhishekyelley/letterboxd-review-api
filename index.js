@@ -1,9 +1,9 @@
 // const express = require('express')
 // const cors = require('cors')
 // const rateLimit = require('express-rate-limit')
-const http = require('http')
-const url = require('url')
-const { getReviewData, getProxyImage } = require('./scraper')
+import http from 'http'
+import url from 'url'
+import { getReviewData, getProxyImage } from './scraper.js'
 const missingParamsError = {
     error: true,
     message: "Missing required params (blink)",
@@ -60,7 +60,6 @@ const server = http.createServer((req, res) => {
         }
         getReviewData(blink)
         .then((details) => {
-            res.writeHead(200)
             res.end(JSON.stringify(details))
         })
         .catch((error) => {
@@ -80,13 +79,20 @@ const server = http.createServer((req, res) => {
         getProxyImage(blink)
         .then((response) => {
             res.setHeader('Content-Type', 'image/jpeg')
-            res.writeHead(200)
-            response.data.pipe(res)
+            response.body.pipe(res)
         })
         .catch((error) => {
-            res.setHeader('Content-Type', 'text/json')
-            res.writeHead(error.status || 520)
-            res.end(JSON.stringify(error))
+            // CHANGE THIS
+            try{
+                res.setHeader('Content-Type', 'text/json')
+                res.writeHead(error.status || 520)
+            }
+            catch(e){
+                console.error(e)
+            }
+            finally{
+                res.end(JSON.stringify(error))
+            }
         })
     }
     // bad route
