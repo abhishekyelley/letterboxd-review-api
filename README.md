@@ -1,6 +1,6 @@
 # [letterboxd-review-api](https://letterboxd-review-api.vercel.app/)
 
-Visit [letterboxd-review-api.vercel.app](letterboxd-review-api.vercel.app) to use the API.
+Visit [letterboxd-review-api.vercel.app](https://letterboxd-review-api.vercel.app) to use the API.
 
 `/review?${review_url}` to get review info.
 
